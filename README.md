@@ -12,7 +12,10 @@ dashboard.
 ---
 
 ## 🖼️ Screenshots
-
+<div align="center">
+  <img alt="MedPulse Patient Hub Demo" src="docs/medpulse-demo.gif" width="700" />
+  <br/><sub>Live demo (placeholder GIF - replace with real capture)</sub>
+</div>
 <div align="center">
   <img alt="MedPulse Patient Hub — Dashboard" src="docs/medpulse-dashboard.png" 
 width="900" />
