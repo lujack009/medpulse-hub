@@ -1,116 +1,145 @@
-# MedPulse Patient Hub
+# MedPulse Patient Hub — **Beta**
+![status: beta](https://img.shields.io/badge/status-beta-orange)
+![stack](https://img.shields.io/badge/stack-React%20%7C%20Vite%20%7C%20Tailwind%20%7C%20Recharts%20%7C%20Node%20%7C%20Socket.IO-blue)
+![license: MIT](https://img.shields.io/badge/license-MIT-green)
+![node >=18](https://img.shields.io/badge/node-%3E%3D18-339933)
+[![Last commit](https://img.shields.io/github/last-commit/<you>/<repo>)](https://github.com/lujack009/medpulse-hub/commits/main)
 
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Node.js](https://img.shields.io/badge/Node.js-Express-blue)
-![React](https://img.shields.io/badge/React-18.x-61dafb)
+Real-time patient vitals dashboard (simulated). Built full-stack with **React + 
+Vite + Tailwind + Recharts** on the client and **Node/Express + Socket.IO** on the 
+server. Includes live charts, configurable thresholds, and a centralized alert 
+model (acknowledge/mute in progress).
 
-A **real-time patient monitoring web app** built with **Express, Socket.IO, and 
-React**.  
-It simulates ICU vitals (HR, SpO₂, Respiration, BP) and streams them to a modern 
-dashboard.
-
----
-
-## 🖼️ Screenshots
-<div align="center">
-  <img alt="MedPulse Patient Hub Demo" src="docs/medpulse-demo.gif" width="700" />
-  <br/><sub>Live demo (placeholder GIF - replace with real capture)</sub>
-</div>
-<div align="center">
-  <img alt="MedPulse Patient Hub — Dashboard" src="docs/medpulse-dashboard.png" 
-width="900" />
-  <br/><sub>Dashboard with real-time vitals (simulated)</sub>
-  <br/><br/>
-  <img alt="MedPulse Patient Hub — Patient Detail" src="docs/medpulse-detail.png" 
-width="900" />
-  <br/><sub>Patient detail view with combined chart + thresholds</sub>
-</div>
-
-*(📌 Placeholder images — add yours into `/docs` folder later)*
+> **Beta**: This is an active WIP. The UI, alerts and CSP hardening are being 
+iterated. See **Known Issues** & **Roadmap**.
 
 ---
 
-## 🚀 Quick Demo
+## ✨ Highlights
 
-### Prereqs
-- Node.js **18+**  
-- npm **9+**
+- **Live updates** via Socket.IO (1s tick by default)
+- **Multi-patient grid** + waveform detail view
+- **Threshold-aware tiles** (warning/critical)
+- **Centralized alert model** (ack/Audible alarm; beta)
+- **Dev smoketest routes** to demo critical/warning/normalize
+- **Accessible UI** (keyboard activation on cards)
 
-### Run locally
+---
+
+## 🧱 Tech Stack
+
+- **Frontend:** React 18, Vite, Tailwind, Recharts
+- **Backend:** Node 18+, Express, Socket.IO
+- **DevX:** Vite HMR, curl-based test routes, Type-safe-ish utilities
+
+---
+
+## 🚀 Quickstart
+
+> Requires **Node 18+**.
+
 ```bash
-# Backend
-cd server
+# clone
+git clone <your-repo-url> && cd medpulse-hub
+
+# install
 npm install
-npm run dev
+cd client && npm install
+cd ../server && npm install
+cd ..
 
-# Frontend
-cd client
-npm install
-npm run dev
+# dev: run backend then frontend (2 terminals)
+cd server && npm run dev         # starts http://localhost:4000
+cd client && npm run dev         # starts http://localhost:5173
 
-### In Browser
-Open http://localhost:5173
+Open http://localhost:5173.
 
-Backend API: http://localhost:4000
+🔊 Demo the alert flow (smoketest)
 
-###Run with Docker
-docker compose up --build
+In a terminal (with the server running):
+# Hold a critical state for 20s on patient p2
+curl "http://localhost:4000/dev/critical/p2?hold=20000"
 
-Frontend: http://localhost:5173
-Backend: http://localhost:4000
+# (optional) warning state for 10s
+curl "http://localhost:4000/dev/warning/p2?hold=10000"
 
-###✨ Features
+# normalize immediately
+curl "http://localhost:4000/dev/normalize/p2"
 
-🔌 Mock vitals generator (HR, SpO₂, Resp, BP)
+Audio asset lives at client/public/alerts/alert.mp3. Open 
+http://localhost:5173/alerts/alert.mp3 to verify it serves.
 
-🔴 Alert states when vitals go out of safe range
+🗂️ Structure
+medpulse-hub/
+├─ client/                  # React app (Vite)
+│  ├─ public/
+│  │  └─ alerts/alert.mp3   # audible alarm (beta)
+│  └─ src/
+│     ├─ alerts/AlertProvider.jsx
+│     ├─ components/
+│     │  ├─ PatientGrid.jsx
+│     │  ├─ PatientDetail.jsx
+│     │  ├─ WaveformBoard.jsx
+│     │  └─ AlertHUD.jsx     # overlay for Enable Sound + Ack (beta)
+│     ├─ controllers/AlertController.jsx
+│     ├─ hooks/useMetricAlert.js
+│     └─ lib/socket.js
+└─ server/
+   └─ src/index.js          # Express + Socket.IO; /config, /history/:pid, 
+/dev/*
 
-📈 Real-time charts (Socket.IO + Recharts)
+⚙️ Config
 
-👤 Patient detail modal with 10-minute history & thresholds
+Client env: client/.env
 
-🌑 Dark ICU-inspired UI (Tailwind)
+VITE_API_BASE=http://localhost:4000
 
-###🧩 Tech Stack
+Server env:
 
-Server: Node.js, Express, Socket.IO
+PORT=4000
+TICK_MS=1000
 
-Client: React (Vite), TailwindCSS, Recharts
+🧪 Dev routes (guarded)
 
-Packaging: Docker Compose
+GET /dev/critical/:id?hold=15000
+GET /dev/warning/:id?hold=15000
+GET /dev/normalize/:id
 
-###⚙️ Config
+Wrapped with if (process.env.NODE_ENV !== "production") to avoid exposure in prod.
 
-Server env vars
+🐞 Known Issues (Beta)
 
-PORT (default 4000)
+Autoplay policies can block sound until the first user gesture. Use the AlertHUD 
+“Enable Alert Sound” once.
 
-TICK_MS (default 1000) → update interval (ms)
+Some environments enforce CSP that blocks eval in dev; allow 'unsafe-eval' in dev 
+only, or run without strict CSP while developing.
 
-MP_MEAN_GAP_MS (default 25000) → avg gap between patient episodes
+Acknowledge button surfaces via AlertHUD and detail view; grid tiles show it when 
+the card wrapper isn’t a <button> (we use a <div role="button">).
 
-Client env vars
+🗺️ Roadmap
 
-VITE_API_BASE (default http://localhost:4000)
+✅ Centralized alerting (logic)
 
-###🧯 Troubleshooting
+🔄 Finalize Ack UX across views
 
-Blank screen: check browser console, ensure /config is reachable
+🔊 Reliable audio unlock across browsers (no visible button)
 
-No updates: backend must show MedPulse server running on :4000
+🧯 No-signal detection (already implemented option, disabled by default)
 
-Port in use: change client port in vite.config.js or kill process
+📦 Server hardening + auth + multi-ward support
 
-###📌 Portfolio Highlights
+📈 Historical analytics + export
 
-End-to-end full-stack build (Express → React)
+🧪 CI + lint/format hooks
 
-Real-time WebSocket streaming
+📸 Screenshots / GIFs
 
-Modular mock data generator with patient “profiles”
+![Dashboard](client/public/media/dashboard.png)
+![Critical Flow](client/public/media/critical.gif)
 
-Recruiter-friendly showcase project
+📄 License
 
-📝 License
+MIT — see LICENSE.
 
-MIT — for educational and portfolio use.
